@@ -15,10 +15,23 @@ namespace Kos.Controllers
             _context = context;
         }
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<RoomType>>> GetRoomTypes()
+        public async Task<ActionResult<IEnumerable<object>>> GetRoomTypes()
         {
-            return Ok(await _context.RoomTypes.ToListAsync());
+            var roomTypes = await _context.RoomTypes
+                .Include(rt => rt.Rooms) // <-- ini penting!
+                .Select(rt => new {
+                    roomTypeId = rt.RoomTypeId,
+                    name = rt.Name,
+                    rooms = rt.Rooms.Select(r => new {
+                        r.Id,
+                        r.Name
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(roomTypes);
         }
+
         [HttpPost]
         public async Task<ActionResult<RoomType>> CreateRoomType(RoomType roomType)
         {

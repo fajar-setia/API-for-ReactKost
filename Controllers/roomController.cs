@@ -21,7 +21,9 @@ namespace Kos.Controllers
             var rooms = await _context.Rooms
                 .Include(r => r.Gallery)
                 .Include(r => r.Reviews)
-                .Include(r => r.Amenities).ToListAsync();
+                .Include(r => r.Amenities)
+                .Include(r => r.RoomType)
+                .ToListAsync();
             return Ok(rooms);
         }
         [HttpPost]
