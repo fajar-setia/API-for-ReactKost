@@ -1,0 +1,6 @@
+@Kos_HostAddress = http://localhost:5116
+
+GET {{Kos_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
