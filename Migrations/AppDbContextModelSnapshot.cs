@@ -43,21 +43,28 @@ namespace Kos.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("RoomId")
+                    b.Property<int>("JumlahKamar")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("RoomId1")
+                    b.Property<int>("JumlahTamu")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("RoomId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<decimal>("TotalPrice")
                         .HasColumnType("numeric");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RoomId1");
+                    b.HasIndex("RoomId");
 
                     b.ToTable("Bookings");
                 });
@@ -216,7 +223,7 @@ namespace Kos.Migrations
                 {
                     b.HasOne("Kos.Models.Room", "Room")
                         .WithMany("Bookings")
-                        .HasForeignKey("RoomId1")
+                        .HasForeignKey("RoomId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Kos.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250807053228_addCategoryGallery")]
-    partial class addCategoryGallery
+    [Migration("20250809131800_addAvailableSetTrue")]
+    partial class addAvailableSetTrue
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -46,10 +46,13 @@ namespace Kos.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("RoomId")
+                    b.Property<int>("JumlahKamar")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("RoomId1")
+                    b.Property<int>("JumlahTamu")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("RoomId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("StartDate")
@@ -60,7 +63,7 @@ namespace Kos.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RoomId1");
+                    b.HasIndex("RoomId");
 
                     b.ToTable("Bookings");
                 });
@@ -89,8 +92,12 @@ namespace Kos.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("RoomId")
+                    b.Property<Guid?>("RoomId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -215,7 +222,7 @@ namespace Kos.Migrations
                 {
                     b.HasOne("Kos.Models.Room", "Room")
                         .WithMany("Bookings")
-                        .HasForeignKey("RoomId1")
+                        .HasForeignKey("RoomId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -226,9 +233,7 @@ namespace Kos.Migrations
                 {
                     b.HasOne("Kos.Models.Room", "Room")
                         .WithMany("Gallery")
-                        .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("RoomId");
 
                     b.Navigation("Room");
                 });

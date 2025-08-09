@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Kos.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250725173858_addroomtypefiks")]
-    partial class addroomtypefiks
+    [Migration("20250809160933_addstatusPending")]
+    partial class addstatusPending
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -46,21 +46,28 @@ namespace Kos.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("RoomId")
+                    b.Property<int>("JumlahKamar")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("RoomId1")
+                    b.Property<int>("JumlahTamu")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("RoomId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<decimal>("TotalPrice")
                         .HasColumnType("numeric");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RoomId1");
+                    b.HasIndex("RoomId");
 
                     b.ToTable("Bookings");
                 });
@@ -71,6 +78,10 @@ namespace Kos.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("DateAdded")
                         .HasColumnType("timestamp with time zone");
 
@@ -78,12 +89,19 @@ namespace Kos.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("Featured")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("ImageUrl")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("RoomId")
+                    b.Property<Guid?>("RoomId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -165,6 +183,28 @@ namespace Kos.Migrations
                     b.ToTable("Rooms");
                 });
 
+            modelBuilder.Entity("Kos.Models.RoomAmenity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("RoomId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoomId");
+
+                    b.ToTable("RoomAmenities");
+                });
+
             modelBuilder.Entity("Kos.Models.RoomType", b =>
                 {
                     b.Property<int>("RoomTypeId")
@@ -186,7 +226,7 @@ namespace Kos.Migrations
                 {
                     b.HasOne("Kos.Models.Room", "Room")
                         .WithMany("Bookings")
-                        .HasForeignKey("RoomId1")
+                        .HasForeignKey("RoomId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -197,9 +237,7 @@ namespace Kos.Migrations
                 {
                     b.HasOne("Kos.Models.Room", "Room")
                         .WithMany("Gallery")
-                        .HasForeignKey("RoomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("RoomId");
 
                     b.Navigation("Room");
                 });
@@ -224,8 +262,21 @@ namespace Kos.Migrations
                     b.Navigation("RoomType");
                 });
 
+            modelBuilder.Entity("Kos.Models.RoomAmenity", b =>
+                {
+                    b.HasOne("Kos.Models.Room", "Room")
+                        .WithMany("Amenities")
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Room");
+                });
+
             modelBuilder.Entity("Kos.Models.Room", b =>
                 {
+                    b.Navigation("Amenities");
+
                     b.Navigation("Bookings");
 
                     b.Navigation("Gallery");

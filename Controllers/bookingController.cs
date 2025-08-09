@@ -18,7 +18,7 @@ namespace Kos.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Booking>>> GetBookings()
         {
-            var bookings = await _context.Bookings.Include(b => b.Room).Select(b => new BookingDTO
+            var bookings = await _context.Bookings.Include(b => b.Room).ThenInclude(b => b.Amenities).Select(b => new BookingDTO
             {
                 Id = b.Id,
                 CustomerName = b.CustomerName,
@@ -27,7 +27,9 @@ namespace Kos.Controllers
                 StartDate = b.StartDate,
                 EndDate = b.EndDate,
                 TotalPrice = b.TotalPrice,
-                RoomName = b.Room.Name
+                RoomName = b.Room.Name,
+                Amenities = b.Room.Amenities.Select(a => a.Name).ToList(),
+                Status = b.Status,
             }).ToListAsync();
             return Ok(bookings);
         }
@@ -39,17 +41,21 @@ namespace Kos.Controllers
             {
                 return NotFound("Room not found.");
             }
+
             var conflict = await _context.Bookings.AnyAsync(b =>
                 b.RoomId == dto.RoomId &&
-                ((b.StartDate < dto.EndDate && b.EndDate > dto.StartDate) || // Overlapping dates
-                 (b.StartDate == dto.StartDate && b.EndDate == dto.EndDate))); // Exact match
+                ((b.StartDate < dto.EndDate && b.EndDate > dto.StartDate) ||
+                 (b.StartDate == dto.StartDate && b.EndDate == dto.EndDate)));
+
             if (conflict)
             {
-                return Conflict("tanggal sudah dibooking.");
+                return Conflict("Tanggal sudah dibooking.");
             }
+
             var totalDays = (dto.EndDate - dto.StartDate).Days;
-            var totalPrice = totalDays * room.PricePerNight; // Calculate total price based on room price per night
-            var Booking = new Booking
+            var totalPrice = totalDays * room.PricePerNight * dto.JumlahKamar;
+
+            var booking = new Booking
             {
                 Id = Guid.NewGuid(),
                 RoomId = dto.RoomId,
@@ -58,26 +64,39 @@ namespace Kos.Controllers
                 CustomerName = dto.CustomerName,
                 CustomerEmail = dto.CustomerEmail,
                 CustomerPhone = dto.CustomerPhone,
-                TotalPrice = totalPrice
+                TotalPrice = totalPrice,
+                JumlahKamar = dto.JumlahKamar,
+                JumlahTamu = dto.JumlahTamu,
+                Status = "pending"
             };
-            _context.Bookings.Add(Booking);
+
+            _context.Bookings.Add(booking);
+            room.IsAvailable = false;
+
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetBooking), new { id = Booking.Id}, new BookingDTO
+
+            return CreatedAtAction(nameof(GetBooking), new { id = booking.Id }, new BookingDTO
             {
-                Id = Booking.Id,
-                CustomerName = Booking.CustomerName,
-                CustomerEmail = Booking.CustomerEmail,
-                CustomerPhone = Booking.CustomerPhone,
-                StartDate = Booking.StartDate,
-                EndDate = Booking.EndDate,
-                TotalPrice = Booking.TotalPrice,
-                RoomName = room.Name
+                Id = booking.Id,
+                CustomerName = booking.CustomerName,
+                CustomerEmail = booking.CustomerEmail,
+                CustomerPhone = booking.CustomerPhone,
+                StartDate = booking.StartDate,
+                EndDate = booking.EndDate,
+                TotalPrice = booking.TotalPrice,
+                RoomName = room.Name,
+                JumlahKamar = booking.JumlahKamar,
+                JumlahTamu = booking.JumlahTamu,
+                Status = booking.Status,
             });
         }
         [HttpGet("{id}")]
         public async Task<ActionResult<Booking>> GetBooking(Guid id)
         {
-            var booking = await _context.Bookings.Include(b => b.Room).FirstOrDefaultAsync(b => b.Id == id);
+            var booking = await _context.Bookings
+                          .Include(b => b.Room)
+                          .ThenInclude(b => b.Amenities)
+                          .FirstOrDefaultAsync(b => b.Id == id);
             if (booking == null)
             {
                 return NotFound();
@@ -103,6 +122,9 @@ namespace Kos.Controllers
             existingBooking.CustomerEmail = booking.CustomerEmail;
             existingBooking.CustomerPhone = booking.CustomerPhone;
             existingBooking.TotalPrice = booking.TotalPrice;
+            existingBooking.JumlahKamar = booking.JumlahKamar;
+            existingBooking.JumlahTamu = booking.JumlahTamu;
+            existingBooking.Status = booking.Status;
             _context.Entry(existingBooking).State = EntityState.Modified;
             await _context.SaveChangesAsync();
             return NoContent();
@@ -115,12 +137,26 @@ namespace Kos.Controllers
             {
                 return NotFound();
             }
+
+            // Ambil room yang bersangkutan
+            var room = await _context.Rooms.FindAsync(booking.RoomId);
+
             _context.Bookings.Remove(booking);
             await _context.SaveChangesAsync();
+
+            // Cek jika tidak ada booking aktif untuk room ini, ubah jadi tersedia
+            bool stillHasBooking = await _context.Bookings.AnyAsync(b => b.RoomId == booking.RoomId);
+            if (!stillHasBooking && room != null)
+            {
+                room.IsAvailable = true;
+                _context.Rooms.Update(room);
+                await _context.SaveChangesAsync();
+            }
+
             return NoContent();
         }
         [HttpGet("room/{roomId}")]
-        public async Task<ActionResult<IEnumerable<Booking>>> GetBookingsByRoom(int roomId)
+        public async Task<ActionResult<IEnumerable<Booking>>> GetBookingsByRoom(Guid roomId)
         {
             var bookings = await _context.Bookings
                 .Where(b => b.RoomId == roomId)
@@ -141,9 +177,44 @@ namespace Kos.Controllers
                 StartDate = b.StartDate,
                 EndDate = b.EndDate,
                 TotalPrice = b.TotalPrice,
-                RoomName = b.Room.Name
+                RoomName = b.Room.Name,
+                Status = b.Status,
             }).ToListAsync();
             return Ok(bookings);
         }
+        [HttpGet("available")]
+        public async Task<IActionResult> CheckAvailability(string roomId, string startDate, string endDate)
+        {
+            if (!Guid.TryParse(roomId, out var roomGuid))
+                return BadRequest("Invalid roomId");
+
+            if (!DateTime.TryParse(startDate, out var start))
+                return BadRequest("Invalid startDate");
+
+            if (!DateTime.TryParse(endDate, out var end))
+                return BadRequest("Invalid endDate");
+
+            start = DateTime.SpecifyKind(start, DateTimeKind.Utc);
+            end = DateTime.SpecifyKind(end, DateTimeKind.Utc);
+
+            // Lanjut ke cek booking seperti biasa
+            var room = await _context.Rooms.FindAsync(roomGuid);
+            if (room == null)
+                return NotFound("Room not found");
+
+            bool isBooked = await _context.Bookings.AnyAsync(b =>
+                b.RoomId == roomGuid &&
+                ((start >= b.StartDate && start < b.EndDate) ||
+                 (end > b.StartDate && end <= b.EndDate) ||
+                 (start <= b.StartDate && end >= b.EndDate))
+            );
+
+            return Ok(new { available = !isBooked });
+        }
+
+
+
+
+
     }
 }

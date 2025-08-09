@@ -5,7 +5,7 @@
 namespace Kos.Migrations
 {
     /// <inheritdoc />
-    public partial class makeRoomIdnullabel : Migration
+    public partial class addAvailableSetTrue : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -9,6 +9,11 @@
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public decimal TotalPrice { get; set; }
+        public int JumlahKamar { get; set; }
+        public int JumlahTamu { get; set; }
+        public string Status { get; set; } = "pending";
         public string RoomName { get; set; } = string.Empty;
+        public List<string> Amenities { get; set; } = new();
+
     }
 }

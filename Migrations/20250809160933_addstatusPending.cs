@@ -5,14 +5,14 @@
 namespace Kos.Migrations
 {
     /// <inheritdoc />
-    public partial class AddTitleGalleries : Migration
+    public partial class addstatusPending : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<string>(
-                name: "Title",
-                table: "Galleries",
+                name: "Status",
+                table: "Bookings",
                 type: "text",
                 nullable: false,
                 defaultValue: "");
@@ -22,8 +22,8 @@ namespace Kos.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "Title",
-                table: "Galleries");
+                name: "Status",
+                table: "Bookings");
         }
     }
 }
