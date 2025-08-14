@@ -131,21 +131,21 @@ namespace Kos.Migrations
                     b.Property<DateTime>("DateCreated")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("text");
+
                     b.Property<bool>("IsAddressed")
                         .HasColumnType("boolean");
 
                     b.Property<int>("Rating")
                         .HasColumnType("integer");
 
-                    b.Property<int>("RoomId")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("RoomId1")
+                    b.Property<Guid>("RoomId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RoomId1");
+                    b.HasIndex("RoomId");
 
                     b.ToTable("Reviews");
                 });
@@ -249,7 +249,7 @@ namespace Kos.Migrations
                 {
                     b.HasOne("Kos.Models.Room", "Room")
                         .WithMany("Reviews")
-                        .HasForeignKey("RoomId1")
+                        .HasForeignKey("RoomId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
