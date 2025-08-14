@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Kos.Data;
 using Kos.Models; // Ensure this namespace matches your project structure
+using Kos.Models.DTO; // Ensure this namespace matches your project structure
 namespace Kos.Controllers
+
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -55,6 +57,8 @@ namespace Kos.Controllers
             existingReview.Rating = review.Rating;
             existingReview.Comment = review.Comment;
             existingReview.DateCreated = review.DateCreated;
+            existingReview.IsAddressed = review.IsAddressed;
+            existingReview.AdminResponse = review.AdminResponse;
             _context.Entry(existingReview).State = EntityState.Modified;
             await _context.SaveChangesAsync();
             return NoContent();
@@ -90,5 +94,23 @@ namespace Kos.Controllers
                 .AverageAsync(r => (double?)r.Rating) ?? 0;
             return Ok(avg);
         }
+        [HttpPatch("respond/{id}")]
+        public async Task<IActionResult> RespondToReview(Guid id, [FromBody] ReviewResponseDto responseDto)
+        {
+            var existingReview = await _context.Reviews.FindAsync(id);
+            if (existingReview == null)
+            {
+                return NotFound();
+            }
+
+            existingReview.IsAddressed = responseDto.IsAddressed;
+            existingReview.AdminResponse = responseDto.AdminResponse;
+
+            _context.Entry(existingReview).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
     }
 }

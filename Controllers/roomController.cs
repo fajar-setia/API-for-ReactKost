@@ -98,7 +98,7 @@ namespace Kos.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetRoom(Guid id)
         {
-            var room = await _context.Rooms.Include(r => r.Gallery).Include(r => r.Reviews).Include(r => r.Amenities).FirstOrDefaultAsync(r => r.Id == id);
+            var room = await _context.Rooms.Include(r => r.Gallery).Include(r => r.Reviews).Include(r => r.Amenities).Include(r => r.RoomType).FirstOrDefaultAsync(r => r.Id == id);
             if (room == null)
             {
                 return NotFound();
