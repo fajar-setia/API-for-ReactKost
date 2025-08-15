@@ -1,8 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Mvc;
-using Kos.Data;
+﻿using Kos.Data;
 using Kos.Models; // Ensure this namespace matches your project structure
 using Kos.Models.DTO; // Ensure this namespace matches your project structure
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 namespace Kos.Controllers
 
 {
@@ -129,22 +130,34 @@ namespace Kos.Controllers
             return Ok(avg);
         }
         [HttpPatch("respond/{id}")]
+        [AllowAnonymous] // supaya hanya admin yang bisa membalas
         public async Task<IActionResult> RespondToReview(Guid id, [FromBody] ReviewResponseDto responseDto)
         {
             var existingReview = await _context.Reviews.FindAsync(id);
             if (existingReview == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Review tidak ditemukan" });
             }
 
+            // Validasi jika balasan kosong
+            if (string.IsNullOrWhiteSpace(responseDto.AdminResponse))
+            {
+                return BadRequest(new { message = "Balasan admin tidak boleh kosong" });
+            }
+
+            // Update data
             existingReview.IsAddressed = responseDto.IsAddressed;
             existingReview.AdminResponse = responseDto.AdminResponse;
+            existingReview.ResponseDate = DateTime.UtcNow; // optional: tambahkan tanggal balasan
 
-            _context.Entry(existingReview).State = EntityState.Modified;
+            _context.Entry(existingReview).Property(r => r.IsAddressed).IsModified = true;
+            _context.Entry(existingReview).Property(r => r.AdminResponse).IsModified = true;
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            // Kembalikan review yang sudah diperbarui supaya frontend bisa langsung update
+            return Ok(existingReview);
         }
+
 
     }
 }

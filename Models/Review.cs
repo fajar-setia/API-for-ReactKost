@@ -15,6 +15,7 @@ namespace Kos.Models
         public string? AdminResponse { get; set; }  
         public string? ImageUrl { get; set; } 
         public DateTime DateCreated { get; set; } = DateTime.UtcNow;
+        public DateTime? ResponseDate { get; set; }
         // Navigation property
         public Room Room { get; set; } = null!;
     }
