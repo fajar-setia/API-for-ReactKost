@@ -20,6 +20,11 @@ namespace Kos.Controllers
         public async Task<ActionResult<IEnumerable<Review>>> GetReviews()
         {
             var reviews = await _context.Reviews.Include(r => r.Room).ToListAsync();
+            Console.WriteLine("JUMLAH REVIEW: " + reviews.Count);
+            foreach (var r in reviews)
+            {
+                Console.WriteLine($"Review: {r.CustomerName} - {r.Comment}");
+            }
             return Ok(reviews);
         }
         [HttpPost]
@@ -113,13 +118,12 @@ namespace Kos.Controllers
         [HttpGet("room/{roomId}")]
         public async Task<ActionResult<IEnumerable<Review>>> GetReviewsByRoom(Guid roomId)
         {
-            var reviews = await _context.Reviews.Where(r => r.RoomId == roomId).ToListAsync();
-            if (reviews == null || !reviews.Any())
-            {
-                return NotFound("No reviews found for this room.");
-            }
-            return Ok(reviews);
+            var reviews = await _context.Reviews
+                .Where(r => r.RoomId == roomId)
+                .ToListAsync();
 
+            // Jangan return NotFound, return saja array kosong
+            return Ok(reviews);
         }
         [HttpGet("average/{roomId}")]
         public async Task<IActionResult> GetAverageRating(Guid roomId)
